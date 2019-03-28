@@ -19,10 +19,11 @@ def init():
 
     series = soup.find(id='series-matches')
     matches = series.select('a.cb-text-complete')
-    pretty_print(scrape_match(matches[5]))
-    # for match in matches:
-    #     scrape_match(match)
+    result = []
+    for match in matches:
+        result.append(scrape_match(match))
 
+    pretty_print(result)
     connection.close()
 
 
@@ -67,7 +68,19 @@ def get_meta(temp_soup):
     team2 = teams[3].get_text().split('\xa0')[0].strip()
 
     titles = list(temp_soup.select('.cb-scrd-hdr-rw'))
-    print(len(titles))
+    temp_team1_spans = titles[0].select('span')[0].get_text()
+
+    if(titles[0].select('span')[0].get_text() == team1+' Innings'):
+        team1_score, team1_wickets_lost, team1_overs_played = get_score(
+            titles[0].select('span')[1].get_text())
+        team2_score, team2_wickets_lost, team2_overs_played = get_score(
+            titles[1].select('span')[1].get_text())
+    else:
+        team1_score, team1_wickets_lost, team1_overs_played = get_score(
+            titles[1].select('span')[1].get_text())
+        team2_score, team2_wickets_lost, team2_overs_played = get_score(
+            titles[0].select('span')[1].get_text())
+
     return {'date': values[1].get_text().strip(),
             'series': series.strip(),
             'season': year.strip(),
@@ -84,7 +97,22 @@ def get_meta(temp_soup):
             'winning_team': winner_regexp_match.group(1),
             'win_by_runs': 0 if win_by_wkt else win_by,
             'win_by_wkts': win_by if win_by_wkt else 0,
+            'team1_score': team1_score,
+            'team1_wickets_lost': team1_wickets_lost,
+            'team1_overs_played': team1_overs_played,
+            'team2_score': team2_score,
+            'team2_wickets_lost': team2_wickets_lost,
+            'team2_overs_played': team2_overs_played,
             }
+
+
+def get_score(strp):
+    data_regex = re.match(r'(\d+)-(\d+)\xa0\((.*)\)', strp.strip())
+    total_score = int(data_regex.group(1))
+    total_wickets = int(data_regex.group(2))
+    overs = float(data_regex.group(3))
+    overs = int(overs) + round(((overs*10) % 10)/6, 2)
+    return total_score, total_wickets, overs
 
 
 if __name__ == "__main__":
