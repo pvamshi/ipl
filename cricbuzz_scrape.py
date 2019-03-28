@@ -5,6 +5,8 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 
 domain = "https://www.cricbuzz.com"
+url_2018 = "/cricket-series/2676/indian-premier-league-2018/matches"
+url_2019 = "/cricket-series/2810/indian-premier-league-2019/matches"
 
 
 def pretty_print(obj):
@@ -13,7 +15,7 @@ def pretty_print(obj):
 
 def init():
     connection = urlopen(
-        domain + "/cricket-series/2676/indian-premier-league-2018/matches")
+        domain + url_2019)
     html_doc = connection.read()
     soup = BeautifulSoup(html_doc, "lxml")
 
@@ -29,6 +31,7 @@ def init():
 
 def scrape_match(match):
     temp_url = match.get('href').replace(
+        'live-cricket-scores', 'cricket-scores').replace(
         'cricket-scores', 'live-cricket-scorecard')
     temp_con = urlopen(domain + temp_url)
     temp_html = temp_con.read()
@@ -51,8 +54,17 @@ def get_meta(temp_soup):
     meta_component = list(temp_soup.select(
         '#page-wrapper .cb-scrd-lft-col > div'))[3]
     values = list(meta_component.select('.cb-col-73'))
-
-    _a, _b, series, year = values[0].get_text().split(',')
+    basic_info_split = values[0].get_text().split(',')
+    if(len(basic_info_split) == 4):
+        '''
+          this format matches all years except 2019
+        '''
+        _a, _b, series, year = values[0].get_text().split(',')
+    else:
+        _a, _b, seriesyear = values[0].get_text().split(',')
+        series_year_regex = re.match(r'([\sa-zA-Z]+)(\d+)', seriesyear.strip())
+        series = series_year_regex.group(1)
+        year = series_year_regex.group(2)
 
     toss_regexp_match = re.match(
         r'(.*) won the toss and opt to (.*)', values[2].get_text())
