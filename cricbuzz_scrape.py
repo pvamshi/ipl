@@ -15,7 +15,7 @@ def pretty_print(obj):
 
 def init():
     connection = urlopen(
-        domain + url_2019)
+        domain + url_2018)
     html_doc = connection.read()
     soup = BeautifulSoup(html_doc, "lxml")
 
@@ -33,9 +33,13 @@ def scrape_match(match):
     temp_url = match.get('href').replace(
         'live-cricket-scores', 'cricket-scores').replace(
         'cricket-scores', 'live-cricket-scorecard')
+    winner_text = match.get_text()
+    winner_regexp_match = re.match(r'(.*) won by (.*)', winner_text)
+    winner = winner_regexp_match.group(1)
     temp_con = urlopen(domain + temp_url)
     temp_html = temp_con.read()
     data = fetch_data(temp_html)
+    data.update({'winning_team': winner})
     temp_con.close()
     return data
 
